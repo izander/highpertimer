@@ -1,11 +1,11 @@
 #!/bin/sh 
 #
 # @file   version_inkr.sh
-# @author Irina Fedotova <i.fedotova@emw.hs-anhalt.de> 
+# @author Irina Fedotova <irina.zander@hs-anhalt.de>
 # @date   Apr, 2012
 # @brief  This file is only for versioning of HighPerTimer. Each make of HighPerTimer increments the build number
 #   
-# Copyright (C) 2012-2016,  Future Internet Lab Anhalt (FILA),
+# Copyright (C) 2012-2019,  Future Internet Lab Anhalt (FILA),
 # Anhalt University of Applied Sciences, Koethen, Germany. All Rights Reserved.
 # 
 

@@ -1,9 +1,9 @@
 /* @file   InterruptTestThread.cpp 
- * @author Irina Fedotova <i.fedotova@emw.hs-anhalt.de> 
+ * @author Irina Zander <irina.zander@hs-anhalt.de>
  * @date   Apr, 2012
  * @brief  interruption of the sleeping thread with the <thread> library
  *  
- * Copyright (C) 2012-2016,  Future Internet Lab Anhalt (FILA),
+ * Copyright (C) 2012-2019,  Future Internet Lab Anhalt (FILA),
  * Anhalt University of Applied Sciences, Koethen, Germany. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it under

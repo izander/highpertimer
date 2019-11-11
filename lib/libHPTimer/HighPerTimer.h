@@ -1,10 +1,10 @@
 /*
  * @file   HighPerTimer.h 
- * @author Irina Fedotova <i.fedotova@emw.hs-anhalt.de> 
+ * @author Irina Zander <irina.zander@hs-anhalt.de>
  * @date   Apr, 2012
  * @brief  Main routine of handling time value along with the access to timing hardware attributes
  *  
- * Copyright (C) 2012-2016,  Future Internet Lab Anhalt (FILA),
+ * Copyright (C) 2012-2019,  Future Internet Lab Anhalt (FILA),
  * Anhalt University of Applied Sciences, Koethen, Germany. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -26,6 +26,7 @@
 #include "TimeHardware.h"
 #include <stdexcept>
 #include <atomic>
+#include <chrono>
 
 namespace HPTimer
 {
@@ -90,8 +91,10 @@ public:
      * @param NSeconds means the nanoseconds part
      * @param Sign means the sign of the timer (true means negative value)
      * @exception std::out_of_range if a memory allocation failed
-     * when one of the ints is negative, than sign must be false and when NSeconds is negative, it is allowed to use only zero Seconds. Otherwise it is an illegal initialization values.
-     * Seconds and NSeconds values should be within the appropriate limits of min or max HPTimer values. Otherwise it is an HPTimer overflow.
+     * when one of the ints is negative, than sign must be false and when NSeconds is negative,
+     * it is allowed to use only zero Seconds. Otherwise it is an illegal initialization values.
+     * Seconds and NSeconds values should be within the appropriate limits of min or max HPTimer values.
+     * Otherwise it is an HPTimer overflow.
      * HighPerTimer is extracted from the Seconds and and NSeconds parts
      */
     HighPerTimer ( int64_t Seconds, int64_t NSeconds, bool Sign = false );
@@ -99,11 +102,29 @@ public:
     /**
      * ctor
      * @param pHighPerTimer is the HighPerTimer counter that the timer should be set
-     * @param Shift tells, if the value should be shifted against the UnixZeroShift. If it is true, Unix zero shift time added to the mHPTics value
+     * @param Shift tells, if the value should be shifted against the UnixZeroShift.
+     * If it is true, Unix zero shift time added to the mHPTics value
      * @exception std::out_of_range if a memory allocation failed
-     * HPTics value should be within the appropriate limits of min or max HPTimer values. Otherwise it is an HPTimer overflow.
+     * HPTics value should be within the appropriate limits of min or max HPTimer values.
+     * Otherwise it is an HPTimer overflow.
      */
     HighPerTimer ( int64_t HPTics, bool Shift = true );
+
+    /**
+     * ctor
+     * @param ChronoTimer is the chrono type object
+     * @param Shift tells, if the value should be shifted against the UnixZeroShift.
+     * If it is true, Unix zero shift time added to the mHPTics value
+     * @exception std::out_of_range if a memory allocation failed
+     * HPTics value should be within the appropriate limits of min or max HPTimer values.
+     * Otherwise it is an HPTimer overflow.
+     * Use a deligation to the ctor HighPerTimer(int64_t HPTics)
+     */
+     template <typename Rep, typename Period>
+     HighPerTimer ( std::chrono::duration <Rep, Period> ChronoTimer, bool Shift=true):
+            HighPerTimer (TimeToTicks(ChronoTimer), Shift)
+     {
+     }
 
     /**
      * ctor
@@ -169,6 +190,15 @@ public:
     /// method for comparing with zero HighPerTimer values
     static HighPerTimer Nil();
 
+    /** add ChronoTime to a timer
+     * @param Chrono object which time should be added
+     * @returns a corrected object
+     */
+    template <typename Rep, typename Period>
+    HighPerTimer & ChronoAdd (std::chrono::duration <Rep, Period> ChronoTimer) {
+	return TicAdd(TimeToTicks(ChronoTimer));
+    }
+
     /** add Seconds to a timer
      * @param Seconds which should be added
      * @returns a corrected object
@@ -207,6 +237,16 @@ public:
         mNormalized = false;
         return *this;
     };
+
+    /** substract Chrono time from timer
+    * @param Chrono object which time should be substracted
+    * @returns a corrected object
+    * @exception std::out_of_range if a memory allocation failed
+    */
+    template <typename Rep, typename Period>
+    HighPerTimer & ChronoSub (std::chrono::duration <Rep, Period> ChronoTimer) {
+	  return TicSub(TimeToTicks(ChronoTimer));
+    }
 
     /** substract Seconds from timer
     * @param Seconds which should be substracted
@@ -270,6 +310,15 @@ public:
      * NOTE: Though it can be done only from another thread, no thread synchronization is done here.
      * So guarantee that it really wakes up the timer, can be given.
      */
+
+    // wait the amount of chrono time which the corresponding timer is set to
+    // NOTE: Though WakeHPTimer can be done only from another thread, no thread synchronization is done here.
+    // So guarantee that WakeHPTimer really wakes up the timer, can be given.
+    template <typename Rep, typename Period>
+    void ChronoSleep(std::chrono::duration <Rep, Period> ChronoTimer) const {
+	    TicsSleep(TimeToTicks(ChronoTimer));
+    }
+
     void SleepTo ( const int64_t WakeHPTimer ) const;
 
     /** wait for WaitTo ticks
@@ -466,8 +515,10 @@ public:
     static std::string GetSourceString();
     
     /** get the time in human readable form
-     * @param HPTimer_only tell, if only the value of HighPerTimer counter will be printed out.In this case, the pUnixTime parameter will be silently ignored.
-     * @param UnixTime forces printing the time in seconds since the begin of the Unix epoche. Defaults to true. If not set, the time in a human readable form will be printed
+     * @param HPTimer_only tell, if only the value of HighPerTimer counter will be printed out.
+     * In this case, the pUnixTime parameter will be silently ignored.
+     * @param UnixTime forces printing the time in seconds since the begin of the Unix epoche.
+     * Defaults to true. If not set, the time in a human readable form will be printed
      * @exception std::bad_alloc if a memory allocation failed
      * @exception std::length_error if the maximum size of a string would be exceeded
      */
@@ -514,10 +565,12 @@ private:
     /// the reciprocal value to TicsPerUsec - number of nanoseconds within one HighPerTimer period
     static double NsecPerTic;
     
-    /// timer shift (in tics) between zero of the hardware counter and Unix zero time (01.01.1970). All time systems count from Unix zero time
+    /// timer shift (in tics) between zero of the hardware counter and Unix zero time (01.01.1970).
+    /// All time systems count from Unix zero time
     static int64_t UnixZeroShift;
     
-    /// the duration of one tick of the system timer interrupt, the reciprocal value to HZ - the clock interrupt frequency of the particular hardware platform
+    /// the duration of one tick of the system timer interrupt, the reciprocal value to HZ -
+    /// the clock interrupt frequency of the particular hardware platform
     static double HPJiffies;
     
     /// initialize the most optimal timer counter
@@ -532,9 +585,11 @@ private:
     static void InitHPFrequency( const double DelayTime );
          
     /// initialize Max and Min HighPerTimer which save max and min values of Seconds, NSeconds, HPTics
-    /// when HPET is timer source, the max possible value of NSecPerTic is 100 and it can be caused a possible overflow and a loss of accuracy calculating Seconds and NSeconds parts of timer
+    /// when HPET is timer source, the max possible value of NSecPerTic is 100 and
+    /// it can be caused a possible overflow and a loss of accuracy calculating Seconds and NSeconds parts of timer
     /// so in HPET case it is more reliable to decrease limits for max and min HPTimer values 
-    /// when TSC or OS clock are timer sources, the NSecPerTic value is always less than zero. So it is still safe to limit max and min HPTimer values within max and min values of int64 type 
+    /// when TSC or OS clock are timer sources, the NSecPerTic value is always less than zero.
+    /// So it is still safe to limit max and min HPTimer values within max and min values of int64 type
     static void InitMaxMinHPTimer();
     
     /// initialize the value of jiffies depends on the clock interrupt frequency of the particular hardware platform
@@ -542,6 +597,12 @@ private:
 
     /// get current tics depends on timer source
     static int64_t GetTimerTics();
+
+    // Template function for converting time of chorno-type object into ticks
+    template <typename Rep, typename Period>
+    static int64_t TimeToTicks(std::chrono::duration <Rep, Period> time) {
+    	return static_cast<int64_t> ((std::chrono::duration_cast<std::chrono::nanoseconds> (time)).count() / HighPerTimer::NsecPerTic);
+    }
 
     /** Normalize the stucture - set members Seconds, NSeconds and Sign from the mHPTics value.
      * This is necessare because almost all functions will be have in default configuration in the lazy behavior

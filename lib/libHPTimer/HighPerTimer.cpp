@@ -1,10 +1,10 @@
 /*
  * @file   HighPerTimer.cpp 
- * @author Irina Fedotova <i.fedotova@emw.hs-anhalt.de> 
+ * @author Irina Zander <irina.zander@hs-anhalt.de>
  * @date   Apr, 2012
  * @brief  Main routine of handling time value along with the access to timing hardware attributes
  *  
- * Copyright (C) 2012-2016,  Future Internet Lab Anhalt (FILA),
+ * Copyright (C) 2012-2019,  Future Internet Lab Anhalt (FILA),
  * Anhalt University of Applied Sciences, Koethen, Germany. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -31,10 +31,10 @@
 #include <numeric>    
 #include <algorithm> 
 #include <fstream>    
-#include <sys/resource.h> 
-#include <sys/time.h>    
+#include <sys/resource.h>
 #include <thread>
 #include <chrono>
+#include <cmath>
 #include <condition_variable>
 #include "HighPerTimer.h"
 
@@ -386,14 +386,15 @@ void HighPerTimer::InitHPFrequency( const double DelayTime )
 	uint32_t peak(0);
         for ( std::vector<double>::iterator it = VecFreq.begin(); it != VecFreq.end();)
         {
-            // if this is the first peak in range, no peaks were found before
-            if (peak < 1)
+            // if this is the 1st and 2nd peak in range, no peaks were found before
+            if (peak < 2)
             { 
                 // Grubb's Test for outliers. Factor 1,7885 was chosen exactly for 5 iterations      
-                if ( std::abs(mean - *it) > ( stdev * 1.7885 ) )
+                if ( std::abs(mean - *it) > ( stdev * 1.788854382 ) )
 	        {                    
                     ++peak;
                     VecFreq.erase(it);
+                    mean = std::accumulate(std::begin(VecFreq), std::end(VecFreq), 0.0) / VecFreq.size();
                 }
                 else
                 {
