@@ -145,7 +145,8 @@ bool TSCTimer::InitTSCTimer()
     {
         // since family 0x0f and model 0x03 all have constant tsc
         // including Pentium 4, Intel Xeon processors
-        if ( ( ( SignCPUIDoutput.FamilyID + SignCPUIDoutput.ExtendedFamilyID ) == 0x0f ) && ( ( SignCPUIDoutput.ExtendedModel << 4|SignCPUIDoutput.Model ) >= 0x03 ) )
+        if ( ( ( SignCPUIDoutput.FamilyID + SignCPUIDoutput.ExtendedFamilyID ) == 0x0f ) &&
+        ( ( SignCPUIDoutput.ExtendedModel << 4|SignCPUIDoutput.Model ) >= 0x03 ) )
         {
             TSCTimer::HasInvariantTSC = false;
             TSCTimer::HasConstantTSC = true;
@@ -153,7 +154,8 @@ bool TSCTimer::InitTSCTimer()
         }
         // either since family 0x06 and model 0x0e all have constant tsc
         // including Intel Core Solo, Intel Core Duo, Intel Xeon 5100, Intel Core 2 Duo. Intel Core 2, Intel Atom
-        if ( ( ( SignCPUIDoutput.FamilyID + SignCPUIDoutput.ExtendedFamilyID ) == 0x06 ) && ( ( SignCPUIDoutput.ExtendedModel << 4|SignCPUIDoutput.Model ) >= 0x0e ) )
+        if ( ( ( SignCPUIDoutput.FamilyID + SignCPUIDoutput.ExtendedFamilyID ) == 0x06 ) &&
+        ( ( SignCPUIDoutput.ExtendedModel << 4|SignCPUIDoutput.Model ) >= 0x0e ) )
         {
             TSCTimer::HasInvariantTSC = false;
             TSCTimer::HasConstantTSC = true;
@@ -164,7 +166,8 @@ bool TSCTimer::InitTSCTimer()
     else if ( !memcmp ( VendorString, CentaurVendor, 12 ) )
     {
         // since family 0x06 and model 0x0f either all have constant tsc
-        if ( ( ( SignCPUIDoutput.FamilyID + SignCPUIDoutput.ExtendedFamilyID ) == 0x06 ) && ( ( SignCPUIDoutput.ExtendedModel << 4|SignCPUIDoutput.Model ) >= 0x0f ) )
+        if ( ( ( SignCPUIDoutput.FamilyID + SignCPUIDoutput.ExtendedFamilyID ) == 0x06 ) &&
+        ( ( SignCPUIDoutput.ExtendedModel << 4|SignCPUIDoutput.Model ) >= 0x0f ) )
         {
             TSCTimer::HasInvariantTSC = false;
             TSCTimer::HasConstantTSC = true;
@@ -185,7 +188,8 @@ TSCTimer::RegsCPUID TSCTimer::ExecuteCPUID ( uint32_t InputEAX )
     asm volatile
     (
         " cpuid;"
-    : "=a" ( RegsCPUIDoutput.EAXBuf ), "=b" ( RegsCPUIDoutput.EBXBuf ), "=c" ( RegsCPUIDoutput.ECXBuf ), "=d" ( RegsCPUIDoutput.EDXBuf )
+    : "=a" ( RegsCPUIDoutput.EAXBuf ), "=b" ( RegsCPUIDoutput.EBXBuf ),
+    "=c" ( RegsCPUIDoutput.ECXBuf ), "=d" ( RegsCPUIDoutput.EDXBuf )
     : "a" ( InputEAX )
     );
     return RegsCPUIDoutput;
@@ -251,8 +255,9 @@ bool HPETTimer::InitHPETTimer()
         }
         return false;
     }
-    // mmap the hpet-circuit into virtual memory, if it succeeds, the first address of virtual memory will be returned in HpetAdd_ptr pointer
-    HPETTimer::HpetAdd_ptr = ( unsigned char * ) mmap ( NULL, 1024, PROT_READ, MAP_SHARED, HPETTimer::HpetFd, 0 );
+    // mmap the hpet-circuit into virtual memory,
+    // if it succeeds, the first address of virtual memory will be returned in HpetAdd_ptr pointer
+    HPETTimer::HpetAdd_ptr = ( unsigned char * ) mmap ( nullptr, 1024, PROT_READ, MAP_SHARED, HPETTimer::HpetFd, 0 );
     if ( HPETTimer::HpetAdd_ptr == MAP_FAILED )
     {   
         switch ( errno )
@@ -267,7 +272,7 @@ bool HPETTimer::InitHPETTimer()
             HPETTimer::HPETFailReason = HPETFail::BADF;
             break;
         case ENODEV:
-            HPETTimer::HPETFailReason = HPETFail::NODEV;
+            HPETTimer::HPETFailReason = HPETFail::eNODEV;
             break;
         case ENOMEM:
             HPETTimer::HPETFailReason = HPETFail::NOMEM;
@@ -276,7 +281,7 @@ bool HPETTimer::InitHPETTimer()
             HPETTimer::HPETFailReason = HPETFail::UNKNOWN;;
             break;
         }
-        int retval = ::close ( HPETTimer::HpetFd );
+        ::close ( HPETTimer::HpetFd );
         return false;
     }
     // 32-bit HPET main counter overruns every 7,16 minutes. So it is denied using this source.
@@ -331,7 +336,7 @@ double HPETTimer::GetHPETFrequency()
 // get OS timer tics
 int64_t OSTimer::GetOSTimerTics()
 {
-    timespec ts;
+    timespec ts{};
     clock_gettime ( CLOCK_MONOTONIC, &ts );
     return ( static_cast<int64_t> ( ts.tv_sec ) * ONE_BILLION + static_cast<int64_t> ( ts.tv_nsec ) ) * ( OSTimer::OSTimerFrequency / 1000LL );
 }

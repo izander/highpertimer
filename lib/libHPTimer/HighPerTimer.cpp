@@ -144,7 +144,8 @@ HighPerTimer::HighPerTimer ( int64_t Seconds, int64_t NSeconds, bool Sign ) :
     mNSeconds = NSeconds % ONE_BILLION;
 
     // check for possible overflow according to max and min value HPTimer
-    if ( ( mSeconds * ONE_BILLION + mNSeconds ) > ( HighPerTimer::HPTimer_MAX.Seconds() * ONE_BILLION + HighPerTimer::HPTimer_MAX.NSeconds() ) )
+    if ( ( mSeconds * ONE_BILLION + mNSeconds ) > ( HighPerTimer::HPTimer_MAX.Seconds() *
+    ONE_BILLION + HighPerTimer::HPTimer_MAX.NSeconds() ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
@@ -152,27 +153,32 @@ HighPerTimer::HighPerTimer ( int64_t Seconds, int64_t NSeconds, bool Sign ) :
     if ( mSign )
     {
         // increase a little bit NsecPerTic to avoid overflow in case we calcukate max value with TSC source
-        mHPTics = - ( static_cast<int64_t> ( ( mSeconds * ONE_BILLION + mNSeconds ) / ( HighPerTimer::NsecPerTic + ( 1/ONE_QUADRILLION ) ) ) );
+        mHPTics = - ( static_cast<int64_t> ( ( mSeconds * ONE_BILLION + mNSeconds ) /
+                ( HighPerTimer::NsecPerTic + ( 1/ONE_QUADRILLION ) ) ) );
     }
     else
     {
         // increase a little bit NsecPerTic to avoid overflow in case we calcukate max value with TSC source
-        mHPTics = static_cast<int64_t> ( ( mSeconds * ONE_BILLION + mNSeconds ) / ( HighPerTimer::NsecPerTic + ( 1/ONE_QUADRILLION ) ) );
+        mHPTics = static_cast<int64_t> ( ( mSeconds * ONE_BILLION + mNSeconds ) /
+                ( HighPerTimer::NsecPerTic + ( 1/ONE_QUADRILLION ) ) );
     }
 }
 
 // ctor
 // @param pHighPerTimer is the HighPerTimer counter that the timer should be set
-// @param Shift tells, if the value should be shifted against the UnixZeroShift. If it is true, Unix zero shift time added to the mHPTics value
+// @param Shift tells, if the value should be shifted against the UnixZeroShift.
+// If it is true, Unix zero shift time added to the mHPTics value
 // @exception std::out_of_range if a memory allocation failed
-// HPTics value should be within the appropriate limits of min or max HPTimer values. Otherwise it is an HPTimer overflow.
+// HPTics value should be within the appropriate limits of min or max HPTimer values.
+// Otherwise it is an HPTimer overflow.
 HighPerTimer::HighPerTimer ( int64_t HPTics, bool Shift ) :
         mHPTics ( HPTics ),
         mNormalized ( false )
 {
     if ( Shift )
     {
-        if ( ( HighPerTimer::HPTimer_MAX.HPTics() - HighPerTimer::UnixZeroShift  >= mHPTics ) && ( HighPerTimer::HPTimer_MIN.HPTics() + HighPerTimer::UnixZeroShift  <= mHPTics ) )
+        if ( ( HighPerTimer::HPTimer_MAX.HPTics() - HighPerTimer::UnixZeroShift  >= mHPTics ) &&
+        ( HighPerTimer::HPTimer_MIN.HPTics() + HighPerTimer::UnixZeroShift  <= mHPTics ) )
         {
             mHPTics += HighPerTimer::UnixZeroShift;
         }
@@ -208,19 +214,24 @@ HighPerTimer::HighPerTimer ( const timespec & TS ) :
         mNormalized ( true )
 {
     // check for possible overflow according to max and min value HPTimer
-    if ( ( mSeconds * ONE_BILLION + mNSeconds ) > ( HighPerTimer::HPTimer_MAX.Seconds() * ONE_BILLION + HighPerTimer::HPTimer_MAX.NSeconds() ) )
+    if ( ( mSeconds * ONE_BILLION + mNSeconds ) > ( HighPerTimer::HPTimer_MAX.Seconds() *
+    ONE_BILLION + HighPerTimer::HPTimer_MAX.NSeconds() ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
-    mHPTics = static_cast<int64_t> ( ( mSeconds * ONE_BILLION + mNSeconds ) / ( HighPerTimer::NsecPerTic + ( 1/ONE_QUADRILLION ) ) );       
+    mHPTics = static_cast<int64_t> ( ( mSeconds * ONE_BILLION + mNSeconds ) /
+            ( HighPerTimer::NsecPerTic + ( 1/ONE_QUADRILLION ) ) );
 }
+
+//move ctor
+HighPerTimer::HighPerTimer(const timespec && ts):
+    HighPerTimer(ts){};
 
 // copy ctor, use lazy assignment approach
 HighPerTimer::HighPerTimer ( const HighPerTimer & Timer ) :
         mHPTics ( Timer.mHPTics ),
         mNormalized ( false )
 {
-  
 }
 
 // move ctor
@@ -228,13 +239,14 @@ HighPerTimer::HighPerTimer ( HighPerTimer && Timer ) :
         mHPTics ( Timer.mHPTics ),     
         mNormalized ( false )
 {
-
 }
 
 // initialize Min and Max value of HPTimer
-// when HPET is timer source, the max possible value of NSecPerTic is 100 and it can be caused a possible overflow and a loss of accuracy calculating Seconds and NSeconds part of timer
+// when HPET is timer source, the max possible value of NSecPerTic is 100 and
+// it can be caused a possible overflow and a loss of accuracy calculating Seconds and NSeconds part of timer
 // so in HPET case it is more reliable to decrease limits for max and min HPTimer values
-// when TSC or OS clock are timer sources, the NSecPerTic value is always less than zero. So it is still safe to limit max and min HPTimer values within max and min values of int64 type
+// when TSC or OS clock are timer sources, the NSecPerTic value is always less than zero.
+// So it is still safe to limit max and min HPTimer values within max and min values of int64 type
 void HighPerTimer::InitMaxMinHPTimer()
 {
     if ( TimeSource::HPET == HighPerTimer::HPTimerSource ) // HPET case
@@ -271,7 +283,8 @@ void HighPerTimer::InitTimerSource()
     else if ( HPETTimer::InitHPETTimer() )
     {
 
-        // in case tsc unavailable, check which TimerSource setting costs more: hpet or clock_gettime. It is expected to be clock_gettime there
+        // in case tsc unavailable, check which TimerSource setting costs more: hpet or clock_gettime.
+        // It is expected to be clock_gettime there
         for ( uint32_t i ( 0 ); i < LoopCount; i++ )
         {
             HPtimerNow1 = HPETTimer::GetHPETTics();
@@ -561,7 +574,8 @@ void HighPerTimer::InitUnixZeroShift()
            
     timespec ts;
     clock_gettime ( CLOCK_REALTIME, &ts );
-    HighPerTimer::UnixZeroShift = ( static_cast<int64_t> ( ( static_cast<int64_t> ( ts.tv_sec ) * ONE_BILLION + static_cast<int64_t> ( ts.tv_nsec ) ) / HighPerTimer::NsecPerTic ) )- HighPerTimer::GetTimerTics();
+    HighPerTimer::UnixZeroShift = ( static_cast<int64_t> ( ( static_cast<int64_t> ( ts.tv_sec ) *
+            ONE_BILLION + static_cast<int64_t> ( ts.tv_nsec ) ) / HighPerTimer::NsecPerTic ) )- HighPerTimer::GetTimerTics();
            
     return;
 }
@@ -737,11 +751,13 @@ HighPerTimer & HighPerTimer::operator-= ( const HighPerTimer & Timer )
 // add double value of seconds to HPTimer
 HighPerTimer & HighPerTimer::operator+= ( const double Seconds )
 {
-    if ( ( Seconds > 0 ) && ( ( HighPerTimer::HPTimer_MAX.HPTics() - ( static_cast<int64_t> ( Seconds /  HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) <= ( mHPTics ) ) )
+    if ( ( Seconds > 0 ) && ( ( HighPerTimer::HPTimer_MAX.HPTics() - ( static_cast<int64_t> ( Seconds /
+    HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) <= ( mHPTics ) ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
-    if ( ( Seconds < 0 ) && ( ( HighPerTimer::HPTimer_MIN.HPTics() - ( static_cast<int64_t> ( Seconds /  HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) >= ( mHPTics ) ) )
+    if ( ( Seconds < 0 ) && ( ( HighPerTimer::HPTimer_MIN.HPTics() - ( static_cast<int64_t> ( Seconds /
+    HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) >= ( mHPTics ) ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
@@ -753,11 +769,13 @@ HighPerTimer & HighPerTimer::operator+= ( const double Seconds )
 // substract double value of seconds to HPTimer
 HighPerTimer & HighPerTimer::operator-= ( const double Seconds )
 {
-    if ( ( Seconds > 0 ) && ( ( HighPerTimer::HPTimer_MIN.HPTics() + ( static_cast<int64_t> ( Seconds /  HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) >= ( mHPTics ) ) )
+    if ( ( Seconds > 0 ) && ( ( HighPerTimer::HPTimer_MIN.HPTics() + ( static_cast<int64_t> ( Seconds /
+    HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) >= ( mHPTics ) ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
-    if ( ( Seconds < 0 ) && ( ( HighPerTimer::HPTimer_MAX.HPTics() + ( static_cast<int64_t> ( Seconds /  HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) <= ( mHPTics ) ) )
+    if ( ( Seconds < 0 ) && ( ( HighPerTimer::HPTimer_MAX.HPTics() + ( static_cast<int64_t> ( Seconds /
+    HighPerTimer::NsecPerTic * ONE_BILLION ) ) ) <= ( mHPTics ) ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
@@ -1135,28 +1153,18 @@ void HighPerTimer::Now ( HighPerTimer & HPTimer )
     HPTimer.mHPTics = HighPerTimer::GetTimerTics() + HighPerTimer::UnixZeroShift;
 }
 
+void HighPerTimer::SetNow()
+{
+    this->mHPTics = HighPerTimer::GetTimerTics() + HighPerTimer::UnixZeroShift;
+    this->mNormalized = false;
+};
+
 // convert double to HPtimer. Double will be interptreted as Unix time
 // @param Time is a double amount of time
 // @return the converted value as HighPerTimer
 HighPerTimer HighPerTimer::DtoHPTimer ( const double Time )
 {
-    return HighPerTimer ( static_cast <int64_t> ( Time * 1e9D  / HighPerTimer::NsecPerTic ), false );
-}
-
-// convert a HPTimer to double.
-// @param HPTimer is a HPTimer which time shoud be converted
-// @return converted time value as double
-double HighPerTimer::HPTimertoD ( const HighPerTimer & HPTimer )
-{
-    return ( HPTimer.HPTics() * static_cast <double> ( HighPerTimer::NsecPerTic ) / 1e9D );
-}
-
-// convert int64 tics to double.
-// @param HPTic means int64 tics which should be converted
-// @return double number
-double HighPerTimer::TictoD ( const int64_t HPTics )
-{
-    return ( HPTics * static_cast <double> ( HighPerTimer::NsecPerTic ) / 1e9D );
+    return HighPerTimer ( static_cast <int64_t> ( Time * 1e9  / HighPerTimer::NsecPerTic ), false );
 }
 
 //convert int64 nanoseconds into a HighPerTimer object. NSeconds will be interptreted as Unix time
@@ -1362,8 +1370,10 @@ std::string HighPerTimer::GetSourceString()
 }
 
 // get the time in human readable form
-// @param HPTimer_only tell, if only the value of HighPerTimer counter will be printed out.In this case, the pUnixTime parameter will be silently ignored.
-// @param UnixTime forces printing the time in seconds since the begin of the Unix epoche. Defaults to true. If not set, the time in a human readable form will be printed
+// @param HPTimer_only tell, if only the value of HighPerTimer counter will be printed out.In this case,
+// the pUnixTime parameter will be silently ignored.
+// @param UnixTime forces printing the time in seconds since the begin of the Unix epoche. Defaults to true.
+// If not set, the time in a human readable form will be printed
 // @exception std::bad_alloc if a memory allocation failed
 // @exception std::length_error if the maximum size of a string would be exceeded
 std::string HighPerTimer::PrintTime ( bool HPTimer_only, bool UnixTime ) const
@@ -1459,9 +1469,11 @@ std::string HighPerTimer::SysNow ()
 // add seconds and a timer, return result by value
 HighPerTimer operator+ ( const HighPerTimer & HPTimer, const uint64_t SecOffset )
 {
-    if ( ( HighPerTimer::HPTimer_MAX.HPTics() - static_cast <int64_t> ( SecOffset / HighPerTimer::GetNsecPerTic() * ONE_BILLION ) ) >= ( HPTimer.HPTics() ) )
+    if ( ( HighPerTimer::HPTimer_MAX.HPTics() - static_cast <int64_t> ( SecOffset /
+    HighPerTimer::GetNsecPerTic() * ONE_BILLION ) ) >= ( HPTimer.HPTics() ) )
     {
-        return HighPerTimer ( HPTimer.HPTics() + static_cast <int64_t> ( SecOffset / HighPerTimer::GetNsecPerTic() * ONE_BILLION ), false );
+        return HighPerTimer ( HPTimer.HPTics() + static_cast <int64_t> ( SecOffset /
+        HighPerTimer::GetNsecPerTic() * ONE_BILLION ), false );
     }
     else
     {
@@ -1472,9 +1484,11 @@ HighPerTimer operator+ ( const HighPerTimer & HPTimer, const uint64_t SecOffset 
 // subtraction operator for HighPerTimer
 HighPerTimer operator- ( const HighPerTimer & HPTimer, const uint64_t SecOffset )
 {
-    if ( ( HighPerTimer::HPTimer_MIN.HPTics() + static_cast <int64_t> ( SecOffset / HighPerTimer::GetNsecPerTic() * ONE_BILLION ) ) <= ( HPTimer.HPTics() ) )
+    if ( ( HighPerTimer::HPTimer_MIN.HPTics() + static_cast <int64_t> ( SecOffset /
+    HighPerTimer::GetNsecPerTic() * ONE_BILLION ) ) <= ( HPTimer.HPTics() ) )
     {
-        return HighPerTimer ( HPTimer.HPTics() - static_cast <int64_t> ( SecOffset / HighPerTimer::GetNsecPerTic() * ONE_BILLION ), false );
+        return HighPerTimer ( HPTimer.HPTics() - static_cast <int64_t> ( SecOffset /
+        HighPerTimer::GetNsecPerTic() * ONE_BILLION ), false );
     }
     else
     {
@@ -1505,7 +1519,7 @@ HPTimerInitAndClean::~HPTimerInitAndClean()
     // check wether the hpet device was opened, and close it in this case
     if ( HPETTimer::HpetFd >= 0 )
     {
-        int retval = ::close ( HPETTimer::HpetFd );
+        ::close ( HPETTimer::HpetFd );
         HPETTimer::HpetFd = -1;
     }
 }

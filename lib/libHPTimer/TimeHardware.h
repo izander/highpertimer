@@ -91,8 +91,9 @@ private:
     inline static int64_t CPU_TSC()
     {
 #ifndef __arm__
-        // The RDTSC(P) instruction loads the high-order 32 bits of the timestamp register into EDX, and the low-order 32 bits into EAX. 
-        register uint32_t low32, high32;
+        // The RDTSC(P) instruction loads the high-order 32 bits of the timestamp register into EDX,
+        // and the low-order 32 bits into EAX.
+        uint32_t low32, high32;
         if ( TSCTimer::HasRDTSCPinst )
         {
             asm volatile
@@ -133,7 +134,7 @@ private:
  */
 enum class HPETFail
 {
-    ACCESS, FAULT, NOENT, MFILE, AGAIN, BUSY, BADF, NODEV, NOMEM, MC32BIT, UNKNOWN
+    ACCESS, FAULT, NOENT, MFILE, AGAIN, BUSY, BADF, eNODEV, NOMEM, MC32BIT, UNKNOWN
 };
 
 //! Class for the High Precision Event Timer initialization

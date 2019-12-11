@@ -34,7 +34,7 @@ namespace HPTimer
 /// source of timer: TSC Timer, HPET Timer or the timer, provided by the OS
 enum class TimeSource
 {
-    TSC, HPET, OS
+    TSC = 10, HPET = 20, OS = 40
 };
 
 //! Main class of HighPerTimer, based on the TSC, HPET or system call of clock_gettime() 
@@ -139,6 +139,13 @@ public:
      * @exception std::out_of_range if a memory allocation failed
      */
     HighPerTimer ( const timespec & TS );
+
+    /**
+     * move ctor
+     * @param ts is the timespec struct
+     * @exception std::out_of_range if a memory allocation failed
+     */
+    HighPerTimer ( const timespec && TS );
 
     /// default copy ctor
     /// use lazy assignment approach
@@ -353,12 +360,7 @@ public:
     static void Now ( HighPerTimer & HPTimer );
 
     /// set timer to the correct time
-    inline void SetNow()
-    {
-        mHPTics = HighPerTimer::GetTimerTics() + HighPerTimer::UnixZeroShift;
-        mNormalized = false;
-        return;
-    };
+    void SetNow();
 
     /** convert double to HPtimer. Double will be interptreted as Unix time
      * @param Time is a double amount of time
@@ -370,9 +372,11 @@ public:
      * @param HPTimer is a HPTimer which time shoud be converted
      * @return converted time value as double
      */
-    static double HPTimertoD ( const HighPerTimer & HPTimer );
+    static inline double HPTimertoD ( const HighPerTimer & HPTimer ) noexcept {
+        return ( HPTimer.HPTics() * ( HighPerTimer::NsecPerTic / 1e9) );
+    }
 
-    /** convert int64 tics to double. 
+    /** convert int64 tics to double.
      * @param HPTic means int64 tics which should be converted
      * @return double number
      */
@@ -534,6 +538,10 @@ public:
      */     
     static std::string SysNow();  
     
+    inline double GetTimeAsDouble()const{
+        return ( this->HPTics() * HighPerTimer::NsecPerTic / 1e9 );
+    }
+
 private:
     /// the seconds part
     mutable int64_t mSeconds;
@@ -610,6 +618,14 @@ private:
     void Normalize() const;      
 };
 
+/** convert int64 tics to double.
+ * @param HPTic means int64 tics which should be converted
+ * @return double number
+ */
+inline double HighPerTimer::TictoD ( const int64_t HPTics ) {
+    return ( HPTics * HighPerTimer::NsecPerTic  / 1e9 );
+}
+
 /** adding operator for HighPerTimer, using offset in seconds
  * @param Timer is a HighPerTimer summand
  * @param SecOffset is an seconds summand
@@ -634,7 +650,7 @@ HighPerTimer operator- ( const HighPerTimer & HPTimer, const uint64_t SecOffset 
  */
 inline HighPerTimer operator+ ( const HighPerTimer & Timer1, const HighPerTimer & Timer2 )
 {
-    if ( ( Timer2.HPTics() > 0 ) && ( ( HighPerTimer::HPTimer_MAX.HPTics() - ( Timer2.HPTics() ) ) <= ( Timer1.HPTics() ) ) ) 
+    if ( ( Timer2.HPTics() > 0 ) && ( ( HighPerTimer::HPTimer_MAX.HPTics() - ( Timer2.HPTics() ) ) <= ( Timer1.HPTics() ) ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
@@ -653,7 +669,7 @@ inline HighPerTimer operator+ ( const HighPerTimer & Timer1, const HighPerTimer 
  */
 inline HighPerTimer operator- ( const HighPerTimer & Timer1, const HighPerTimer & Timer2 )
 {
-    if ( ( Timer2.HPTics() > 0 ) && ( ( HighPerTimer::HPTimer_MIN.HPTics() + ( Timer2.HPTics() ) ) >= ( Timer1.HPTics() ) ) ) 
+    if ( ( Timer2.HPTics() > 0 ) && ( ( HighPerTimer::HPTimer_MIN.HPTics() + ( Timer2.HPTics() ) ) >= ( Timer1.HPTics() ) ) )
     {
         throw  std::out_of_range ( "HPTimer overflow" );
     }
